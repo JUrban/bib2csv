@@ -1,0 +1,48 @@
+#!/usr/bin/perl -w
+
+# Convert a bibfile into a csv file with entries separated by semicolon
+
+# Usage:
+
+# ./bib2csv ARG18.bib > ARG18.csv
+
+ 
+# Copyright (c) 1997-2000 by Gregory P. Ward.  All rights reserved.  This file
+# is part of the Text::BibTeX library.  This library is free software; you
+# may redistribute it and/or modify it under the same terms as Perl itself.
+ 
+use strict;
+use Text::BibTeX;
+
+
+die unless @ARGV == 1 || @ARGV == 2;
+my ($source_filename, $key_pattern) = @ARGV;
+
+my $source_file = Text::BibTeX::File->new($source_filename)
+   or die "couldn't open $source_filename: $!\n";
+
+
+while (my $entry = Text::BibTeX::Entry->new($source_file))
+{
+   # Skip this entry if it's not a regular entry -- that is, we just
+   # drop '@string', '@comment', and '@preamble' entries, probably
+   # unacceptable in the real world.
+   next unless $entry->metatype == BTE_REGULAR;
+
+   # Skip this entry if the user supplied a regex that keys must match
+   # and this entry's key doesn't match.
+   next if defined $key_pattern && $entry->key !~ /$key_pattern/o;
+   # next if $entry->type() =~ m/'\bproceedings\b'/; 
+   for my $i ('author','title','doi','pages') {
+       my $v = $entry->get ($i);
+       print($v); print ';';
+   }
+   my @vals=();
+   for my $i ('journal','issue','booktitle','series','year','volume','publisher') 
+   {
+    my $v = $entry->get ($i);
+    if(defined $v) {   push @vals, $v}
+   }
+   print join(", ", @vals); 
+   print ";\n";
+}  # while $source_file
